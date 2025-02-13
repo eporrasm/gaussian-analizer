@@ -1,0 +1,28 @@
+# Python virtual environment
+venv/
+env/
+.env/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Project specific
+output/*.csv
+input/*.log
+
+# Keep the folders but ignore contents
+!input/.gitkeep
+!output/.gitkeep
