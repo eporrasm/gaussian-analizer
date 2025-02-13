@@ -12,7 +12,7 @@ def main():
     try:
         npa_df, wiberg_df = read_gaussian_matrices(args.filename)
         print(f"Successfully processed {args.filename}")
-        print(f"Files saved in output folder as:")
+        print("Files saved in output folder as:")
         print(f"- {args.filename}_npa.csv")
         print(f"- {args.filename}_wiberg.csv")
     except Exception as e:

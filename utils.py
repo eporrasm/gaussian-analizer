@@ -1,4 +1,3 @@
-import os
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -13,6 +12,18 @@ def read_gaussian_matrices(filename):
     
     Returns:
         tuple: (npa_df, wiberg_df) - Two pandas DataFrames containing the matrices
+    """
+    return read_npa_matrix(filename), read_wiberg_matrix(filename)
+
+def read_npa_matrix(filename):
+    """
+    Reads a Natural Population Analysis table from a Gaussian log file.
+    
+    Args:
+        filename (str): Name of the log file in the input folder
+    
+    Returns:
+        pd.DataFrame: DataFrame containing the NPA table
     """
     # Define input/output paths
     input_dir = Path('input')
@@ -68,45 +79,11 @@ def read_gaussian_matrices(filename):
     # Keep Atom_Label and Atom_Num as strings
     npa_df['Atom_Label'] = npa_df['Atom_Label'].astype(str)
     npa_df['Atom_Num'] = npa_df['Atom_Num'].astype(str)
-    
-    # Extract Wiberg bond index matrix (first occurrence only)
-    wiberg_start = content.find("Wiberg bond index matrix in the NAO basis:")
-    if wiberg_start == -1:
-        raise ValueError("No Wiberg bond index matrix found in file")
-    wiberg_end = content.find("Wiberg bond index matrix in the NAO basis:", wiberg_start + 1)
-    if wiberg_end == -1:  # If no second occurrence found
-        wiberg_end = content.find("JK", wiberg_start)  # Or some other reliable endpoint
-    wiberg_text = content[wiberg_start:wiberg_end]
-    
-    # Process Wiberg matrix
-    num_atoms = len(npa_df)
-    wiberg_matrix = np.zeros((num_atoms, num_atoms))
-    current_row = -1
-    cols = []  # Initialize cols list outside the loop
-    
-    for line in wiberg_text.split('\n'):
-        if 'Atom' in line and '----' in line:
-            # Column header line, get the column indices
-            cols = [int(col) - 1 for col in line.split() if col.isdigit()]
-            continue
-            
-        parts = line.split()
-        if len(parts) >= 2 and parts[0].isdigit() and cols:  # Check if cols is not empty
-            current_row = int(parts[0]) - 1
-            # Skip atom symbol and start from the numerical values
-            values = []
-            for val in parts[2:]:  # Start after atom number and symbol
-                try:
-                    values.append(float(val))
-                except ValueError:
-                    continue  # Skip non-numeric values
-            for col, val in zip(cols, values):
-                wiberg_matrix[current_row, col] = val
-    
-    wiberg_df = pd.DataFrame(wiberg_matrix)
-    
-    # Save to CSV
+
+    # Save to output folder
     npa_df.to_csv(output_dir / f'{filename}_npa.csv', index=False)
-    wiberg_df.to_csv(output_dir / f'{filename}_wiberg.csv', index=False)
-    
-    return npa_df, wiberg_df
+
+    return npa_df
+
+def read_wiberg_matrix(filename):
+    return None
