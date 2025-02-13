@@ -47,4 +47,3 @@ cp path/to/your/file.log input/
 # Run the analyzer
 python gaussian-analizer.py file.log
 ```
-````
