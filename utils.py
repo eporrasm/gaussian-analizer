@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from pathlib import Path
+from config import INPUT_DIR, OUTPUT_DIR, OUTPUT_EXTENSION, NPA_START_MARKER, NPA_END_MARKER, WIBERG_START_MARKER, WIBERG_END_MARKER, NPA_COLUMNS
 
 def read_gaussian_matrices(filename):
     """
@@ -11,7 +12,8 @@ def read_gaussian_matrices(filename):
         filename (str): Name of the log file in the input folder
     
     Returns:
-        tuple: (npa_df, wiberg_df) - Two pandas DataFrames containing the matrices
+        tuple: (pd.DataFrame, np.ndarray) - Pandas DataFrame containing the NPA matrix
+               and Numpy array containing the Wiberg bond index matrix
     """
     return read_npa_matrix(filename), read_wiberg_matrix(filename)
 
@@ -25,20 +27,18 @@ def read_npa_matrix(filename):
     Returns:
         pd.DataFrame: DataFrame containing the NPA table
     """
-    # Define input/output paths
-    input_dir = Path('input')
-    output_dir = Path('output')
+    input_dir = Path(INPUT_DIR)
+    output_dir = Path(OUTPUT_DIR)
     file_path = input_dir / filename
     
-    # Read the file
     with open(file_path, 'r') as f:
         content = f.read()
     
-    # Extract Natural Population Analysis (first occurrence only)
-    npa_start = content.find("Summary of Natural Population Analysis:")
+    # Extract Natural Population Analysis
+    npa_start = content.find(NPA_START_MARKER)
     if npa_start == -1:
         raise ValueError("No Natural Population Analysis found in file")
-    npa_end = content.find("=======================================================================", npa_start)
+    npa_end = content.find(NPA_END_MARKER, npa_start)
     npa_text = content[npa_start:npa_end]
 
     # Process NPA into DataFrame
@@ -68,22 +68,91 @@ def read_npa_matrix(filename):
                 except ValueError:
                     continue  # Skip lines that can't be properly converted
     
-    npa_df = pd.DataFrame(npa_lines, 
-                         columns=['Atom_Label', 'Atom_Num', 'Natural_Charge', 'Core', 'Valence', 'Rydberg', 'Total'])
+    df = pd.DataFrame(npa_lines, columns=NPA_COLUMNS)
 
     # Convert only numeric columns to float
     numeric_columns = ['Natural_Charge', 'Core', 'Valence', 'Rydberg', 'Total']
     for col in numeric_columns:
-        npa_df[col] = pd.to_numeric(npa_df[col], errors='coerce')
+        df[col] = pd.to_numeric(df[col], errors='coerce')
     
     # Keep Atom_Label and Atom_Num as strings
-    npa_df['Atom_Label'] = npa_df['Atom_Label'].astype(str)
-    npa_df['Atom_Num'] = npa_df['Atom_Num'].astype(str)
+    df['Atom_Label'] = df['Atom_Label'].astype(str)
+    df['Atom_Num'] = df['Atom_Num'].astype(str)
 
     # Save to output folder
-    npa_df.to_csv(output_dir / f'{filename}_npa.csv', index=False)
+    output_path = output_dir / f'{filename}_npa{OUTPUT_EXTENSION}'
+    df.to_csv(output_path, index=False)
 
-    return npa_df
+    return df
 
 def read_wiberg_matrix(filename):
-    return None
+    """
+    Reads a Wiberg bond index matrix from a Gaussian log file.
+    The matrix is split into multiple blocks.
+    
+    Args:
+        filename (str): Name of the log file in the input folder
+    
+    Returns:
+        np.ndarray: Numpy array containing the Wiberg bond index matrix
+    """
+    input_dir = Path(INPUT_DIR)
+    output_dir = Path(OUTPUT_DIR)
+    file_path = input_dir / filename
+
+    matrix = None
+    found_wiberg = False
+    current_cols = None
+    reading_data = False
+    
+    with open(file_path, 'r') as file:
+        for line in file:
+            line = line.strip()
+            
+            if WIBERG_START_MARKER in line:
+                found_wiberg = True
+                matrix = [[0.0] * 151 for _ in range(151)]
+                continue
+                
+            if not found_wiberg:
+                continue
+                
+            if line:
+                parts = line.split()
+                
+                if parts[0].lower() == 'atom':
+                    current_cols = [int(x) for x in parts[1:]]
+                    reading_data = False
+                    continue
+                
+                # Start reading data after separator line
+                if all(c in '-' for c in parts[0]):
+                    reading_data = True
+                    continue
+                
+                # Process data line
+                if reading_data and parts[0].strip().rstrip('.').isdigit():
+                    row_idx = int(parts[0].strip().rstrip('.')) - 1
+                    values = [float(x) for x in parts[2:]]  # Skip atom type
+                    
+                    # Store values in matrix
+                    for val, col in zip(values, current_cols):
+                        matrix[row_idx][col-1] = val
+                
+            else:  # Empty line
+                reading_data = False
+                
+            if WIBERG_END_MARKER in line:
+                break
+
+    if matrix is None:
+        raise ValueError("No Wiberg bond order matrix could be generated")
+    
+    # Convert to numpy array
+    matrix_array = np.array(matrix)
+    
+    # Save to output folder with 4 decimal places formatting
+    output_path = output_dir / f'{filename}_wiberg{OUTPUT_EXTENSION}'
+    np.savetxt(output_path, matrix_array, delimiter=',', fmt='%.4f')
+        
+    return matrix_array
