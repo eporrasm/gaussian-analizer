@@ -104,6 +104,7 @@ def read_wiberg_matrix(filename):
     found_wiberg = False
     current_cols = None
     reading_data = False
+    n = get_wiberg_matrix_size(filename)
     
     with open(file_path, 'r') as file:
         for line in file:
@@ -111,7 +112,7 @@ def read_wiberg_matrix(filename):
             
             if WIBERG_START_MARKER in line:
                 found_wiberg = True
-                matrix = [[0.0] * 151 for _ in range(151)]
+                matrix = [[0.0] * n for _ in range(n)]
                 continue
                 
             if not found_wiberg:
@@ -156,3 +157,38 @@ def read_wiberg_matrix(filename):
     np.savetxt(output_path, matrix_array, delimiter=',', fmt='%.4f')
         
     return matrix_array
+
+def get_wiberg_matrix_size(filename):
+    """
+    Determines the size of the Wiberg bond index matrix by counting rows.
+    """
+    input_dir = Path(INPUT_DIR)
+    file_path = input_dir / filename
+    
+    with open(file_path, 'r') as file:
+        reading_data = False
+        found_wiberg = False
+        count = 0
+        
+        for line in file:
+            if WIBERG_START_MARKER in line:
+                found_wiberg = True
+                continue
+
+            if not found_wiberg:
+                continue
+
+            parts = line.strip().split()
+            if not parts:  # Empty line
+                if reading_data:
+                    return count
+                continue
+
+            if all(c in '-' for c in parts[0]):  # Separator line
+                reading_data = True
+                continue
+
+            if reading_data:
+                count += 1
+
+    return count
