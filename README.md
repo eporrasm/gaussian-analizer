@@ -39,6 +39,13 @@ The program will generate two CSV files in the `output` folder:
 - `your_file.log_npa.csv`: Natural Population Analysis matrix
 - `your_file.log_wiberg.csv`: Wiberg bond index matrix
 
+Then the program will prompt the user asking for the number of fragments (i.e. the number of particles).
+For each of the fragments the user must type the number of atoms. The sum of these must be equal to the total of atoms
+and each fragment should have at the very least one atom.
+
+Further on the user will be prompted to give a value to filter by the Wiberg bond index, and by the NPA charge.
+Images will be generated to further visually analize the data of the simulations. 
+
 ## Example
 ```bash
 # Copy your Gaussian log file to input folder

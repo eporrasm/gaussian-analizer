@@ -21,6 +21,7 @@ build/
 
 # Project specific
 output/*.csv
+output/*.png
 input/*.log
 
 # Keep the folders but ignore contents

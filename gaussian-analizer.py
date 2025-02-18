@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
-from utils import read_gaussian_matrices
+from utils import read_gaussian_matrices, visualize
 
 def main():
     parser = argparse.ArgumentParser(description='Process Gaussian log files to extract matrices.')
@@ -15,6 +15,8 @@ def main():
         print("Files saved in output folder as:")
         print(f"- {args.filename}_npa.csv")
         print(f"- {args.filename}_wiberg.csv")
+        visualize(npa_df, wiberg_df)
+        print("Graphs created and saved in the output folder.")
     except Exception as e:
         print(f"Error processing file: {e}")
 
