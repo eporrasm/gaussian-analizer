@@ -14,3 +14,7 @@ WIBERG_END_MARKER = "Wiberg bond index, Totals by atom:"
 
 # NPA Column names
 NPA_COLUMNS = ['Atom_Label', 'Atom_Num', 'Natural_Charge', 'Core', 'Valence', 'Rydberg', 'Total']
+
+# User answers
+YES = ['yes', 'y', '']
+NO = ['no', 'n']
