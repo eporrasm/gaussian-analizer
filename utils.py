@@ -273,8 +273,14 @@ def graph_npa(df, fragment_division):
             print(f'Warning: The fragment {counter} is empty! No image will be generated.')
             counter += 1
             continue
+
+        if row_data.shape[0] > 50 or row_data.shape[1] > 60:
+            plt.figure(figsize=(10, 40))
+        elif row_data.shape[0] > 30 or row_data.shape[1] > 30:
+            plt.figure(figsize=(10, 30))
+        else:
+            plt.figure(figsize=(10, 20))
         # Create the horizontal bar plot
-        plt.figure(figsize=(10, 30))  # Adjust the figure size as needed
         bars = plt.barh(row_data['Atom_Num'], row_data['Natural_Charge'], align='center', color='skyblue')
 
         # Add the name of each entry at the end of the bar
@@ -287,7 +293,7 @@ def graph_npa(df, fragment_division):
             plt.text(x, y, f'Atom {atom_num}: {x:.2f}', ha='left', va='center', color='black')
 
         # Add labels and title
-        plt.ylabel('Categories')
+        plt.ylabel('Atoms (identified by number)') 
         plt.xlabel('Natural Charge')
         plt.title('Horizontal Bar Diagram of Natural Charges')
         plt.yticks([])  # Hide default y-axis labels since we're adding custom ones
@@ -410,10 +416,14 @@ def edit_matrix(matrix, atoms_1, atoms_2, threshold):
     
     Parameters:
         matrix: The input matrix.
+        atoms1: The list of atoms for the first fragment.
+        atoms2: The list of atoms of the fragment compared to the first fragment.
         threshold (float): The threshold value.
     
     Returns:
         numpy.ndarray: The modified matrix.
+        list: The modified list of atoms for the first fragment.
+        list: The modified list of atoms for the other fragment. 
     """
     matrix = np.array(matrix)
     # Delete columns where all values are below the threshold
