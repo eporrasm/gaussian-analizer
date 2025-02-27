@@ -23,6 +23,7 @@ build/
 output/*.csv
 output/*.png
 input/*.log
+input/*.LOG
 
 # Keep the folders but ignore contents
 !input/.gitkeep

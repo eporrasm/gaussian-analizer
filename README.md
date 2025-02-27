@@ -29,28 +29,34 @@ pip install -r requirements.txt
 
 ## Usage
 
-1. Place your Gaussian .log files in the `input` folder
+1. Place your Gaussian .log files in the `input` folder. You need three files:
+   - First fragment log file
+   - Repeating fragments log file
+   - Final state log file (after simulation)
+
 2. Run the analyzer:
 ```bash
-python gaussian-analizer.py your_file.log
+python gaussian-analizer.py
 ```
 
-The program will generate two CSV files in the `output` folder:
-- `your_file.log_npa.csv`: Natural Population Analysis matrix
-- `your_file.log_wiberg.csv`: Wiberg bond index matrix
+3. When prompted, enter the filenames for:
+   - First fragment
+   - Repeating fragments
+   - Final state
 
-Then the program will prompt the user asking for the number of fragments (i.e. the number of particles).
-For each of the fragments the user must type the number of atoms. The sum of these must be equal to the total of atoms
-and each fragment should have at the very least one atom.
+The program will generate CSV files in the `output` folder for each input file:
+- `*_npa.csv`: Natural Population Analysis matrix
+- `*_wiberg.csv`: Wiberg bond index matrix
 
-Further on the user will be prompted to give a value to filter by the Wiberg bond index, and by the NPA charge.
-Images will be generated to further visually analize the data of the simulations. 
+Then the program will prompt for fragment information and generate visualizations for the final state data.
 
 ## Example
 ```bash
-# Copy your Gaussian log file to input folder
-cp path/to/your/file.log input/
+# Copy your Gaussian log files to input folder
+cp path/to/first_fragment.log input/
+cp path/to/other_fragments.log input/
+cp path/to/final_state.log input/
 
-# Run the analyzer
-python gaussian-analizer.py file.log
+# Run the analyzer and follow the prompts
+python gaussian-analizer.py
 ```
