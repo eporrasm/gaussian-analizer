@@ -50,6 +50,10 @@ The program will generate CSV files in the `output` folder for each input file:
 
 Then the program will prompt for fragment information and generate visualizations for the final state data.
 
+- Visualizations based on the final state data in folders:
+  - `npa`: Contains logs and graphs of the Natural Population Analysis matrix
+  - `wiberg`: Contains logs and graphs of the Wiberg bond index matrix
+  
 ## Example
 ```bash
 # Copy your Gaussian log files to input folder
