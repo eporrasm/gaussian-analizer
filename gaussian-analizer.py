@@ -36,8 +36,8 @@ def main():
         print(f"Files saved as {final_state}_npa.csv and {final_state}_wiberg.csv")
         
         # Create visualizations for the final state
-        visualize(npa_final, wiberg_final)
-        print("\nGraphs created and saved in the output folder.")
+        visualize(npa_final, wiberg_final, npa_first, wiberg_first, npa_other, wiberg_other)
+        print("\nSuccess!\nRemember to check the output folder with the new files.\nExiting program...")
         
     except Exception as e:
         print(f"Error processing files: {e}")
