@@ -212,7 +212,7 @@ def user_input(max_atom_num):
 
         print('Number of fragments?')
         n_fragments = int(input())
-
+        print('The fragment 1 is related to the carbonized structure')
         for i in range(n_fragments-1):
             fragments.append(int(input(f"How many atoms does the fragment {i+1} have? ")))
 
@@ -239,71 +239,111 @@ def user_input(max_atom_num):
             else:
                 print('Invalid answer\n')
 
-def visualize(npa_df, wiberg_df):
+def visualize(npa_df, wiberg_df, npa_first, wiberg_first, npa_other, wiberg_other):
     """Creates visualizations of the NPA and Wiberg bond index matrices."""
+    pd.options.mode.chained_assignment = None
     fragment_division = user_input(len(npa_df.index))
     graph_wiberg(wiberg_df, fragment_division)
-    print("Wiberg heatmap created and saved in the output folder.")
-    graph_npa(npa_df, fragment_division)
+    print("Wiberg heatmap completed. Files created.\n")
+    graph_npa(npa_df, npa_first, npa_other,  fragment_division)
+    print("NPA completed. Files created.\n")
    
 
 
-def graph_npa(df, fragment_division):
+def graph_npa(df, npa_first, npa_other, fragment_division):
     """Creates a horizontal bar plot of the Natural Population Analysis (NPA) data.
     Parameters:
     df (pd.DataFrame): The DataFrame containing the NPA data.
+    npa_first: The DataFrame containing the NPA data of the first fragment (carbonized).
+    npa_other: The DataFrame containing the NPA data of the other fragments.
     fragment_division (list): A list of integers representing the division of the fragments.
+    Returns:
+    None: The function saves the plot as a PNG file and the data as a CSV file.
     """
     row = df
     counter = 1
     row_split = list()
 
-    for i in range(len(fragment_division) - 2):
-        row_split.append(row.loc[fragment_division[i]:fragment_division[i+1]-1])
+    df['Atom_Num'] = df['Atom_Num'].astype('int') 
+    npa_first['Atom_Num'] = npa_first['Atom_Num'].astype('int')
+    npa_other['Atom_Num'] = npa_other['Atom_Num'].astype('int')
+    npa_first['Natural_Charge_Before'] = npa_first['Natural_Charge'].astype('float')
+    npa_other['Natural_Charge_Before'] = npa_other['Natural_Charge'].astype('float')
+    npa_first = npa_first[['Atom_Num', 'Natural_Charge_Before']]
+    npa_other = npa_other[['Atom_Num', 'Natural_Charge_Before']]         
 
-    i += 1
-    row_split.append(row.loc[fragment_division[i]:fragment_division[i+1]])
+    for i in range(len(fragment_division) - 1):
+        if i == 0:
+            npa_data = npa_first
+        else:
+            npa_data = npa_other
+            npa_data['Atom_Num'] += (fragment_division[i]) - (fragment_division[i-1])
+
+        new_row = row.loc[fragment_division[i]:fragment_division[i+1]-1]
+        new_row = new_row.join(npa_data.set_index('Atom_Num'), on='Atom_Num')
+        new_row['Natural_Charge_Diff'] = new_row['Natural_Charge_Before'] - new_row['Natural_Charge']
+        row_split.append(new_row)
 
     filter_type, filter_value = input_filter_npa()
     for i in range(len(row_split)):
         row_split[i] = filter_npa(row_split[i], filter_type, filter_value)
 
+    orderby = order_by_npa()
+    
     for row_data in row_split:
         if row_data.empty:
             print(f'Warning: The fragment {counter} is empty! No image will be generated.')
             counter += 1
             continue
+    
+        if orderby == 'charge':
+            row_data['Natural_Charge_Diff_Abs'] = row_data['Natural_Charge_Diff'].abs()
+            row_data = row_data.sort_values(by='Natural_Charge_Diff_Abs', ascending=True)
 
+        # Determine the figure size based on the data size
         if row_data.shape[0] > 50 or row_data.shape[1] > 60:
             plt.figure(figsize=(10, 40))
         elif row_data.shape[0] > 30 or row_data.shape[1] > 30:
             plt.figure(figsize=(10, 30))
         else:
             plt.figure(figsize=(10, 20))
-        # Create the horizontal bar plot
-        bars = plt.barh(row_data['Atom_Num'], row_data['Natural_Charge'], align='center', color='skyblue')
+
+        # Create an array for the y positions
+        y_positions = np.arange(len(row_data['Atom_Num']))
+
+        # Define the width of the bars
+        bar_width = 0.35
+
+        # Create the horizontal bar plot with slight offset
+        bars = plt.barh(y_positions - bar_width/2, row_data['Natural_Charge'], height=bar_width, align='center', color='skyblue', label='After')
+        bars2 = plt.barh(y_positions + bar_width/2, row_data['Natural_Charge_Before'], height=bar_width, align='center', color='yellow', label='Before')
 
         # Add the name of each entry at the end of the bar
-        for bar, atom_num in zip(bars, row_data['Atom_Num']):
-            # Get the x and y positions for the label
+        for bar, atom_num, y in zip(bars, row_data['Atom_Num'], y_positions):
             x = bar.get_width()  # Width of the bar (value)
-            y = bar.get_y() + bar.get_height() / 2  # Center of the bar vertically
-            
-            # Add the label in the format "Atom {Atom_Num}: {Natural_Charge}"
-            plt.text(x, y, f'Atom {atom_num}: {x:.2f}', ha='left', va='center', color='black')
+            plt.text(x, y - bar_width/2, f'Atom {atom_num} (after): {x:.2f}', ha='left', va='center', color='black')
+
+        for bar, atom_num, y in zip(bars2, row_data['Atom_Num'], y_positions):
+            x = bar.get_width()  # Width of the bar (value)
+            plt.text(x, y + bar_width/2, f'Atom {atom_num} (before): {x:.2f}', ha='left', va='center', color='black')
 
         # Add labels and title
-        plt.ylabel('Atoms (identified by number)') 
+        plt.ylabel('Atoms (identified by number)')
         plt.xlabel('Natural Charge')
         plt.title('Horizontal Bar Diagram of Natural Charges')
-        plt.yticks([])  # Hide default y-axis labels since we're adding custom ones
+        plt.yticks(y_positions, row_data['Atom_Num'])  # Set y-ticks to Atom_Num
 
         # Add extras
         plt.grid(visible=True, axis='x')  # Add grid lines only for the x-axis
+        plt.legend()  # Add legend to distinguish 'Before' and 'After'
 
         # Show the plot
         plt.tight_layout()  # Adjust layout to prevent clipping of labels
-        plt.savefig(f'./output/npa_fragment{counter}.png', dpi=300, bbox_inches='tight')
+        plt.savefig(f'./output/npa/npa_fragment{counter}.png', dpi=300, bbox_inches='tight')
+        # Save the plot's data as CSV
+        row_data[['Atom_Num', 'Natural_Charge_Before', 'Natural_Charge', 'Natural_Charge_Diff']].to_csv(
+            f'./output/npa/logs/npa_fragment{counter}.csv',
+            index=False)
         counter += 1
 
 def input_filter_npa():
@@ -339,18 +379,35 @@ def filter_npa(df, filter_type, filter_value):
             pass
 
 def abs_value_npa(df, filter_value):
-    """Filter the NPA data based on the absolute value of the charge."""
-    return df[df['Natural_Charge'].abs() > filter_value]
+    """Filter the NPA data based on the absolute value of the charge change."""
+    return df[df['Natural_Charge_Diff'].abs() > filter_value]
+
+def order_by_npa():
+    """Ask the user if they want to order the NPA data by the atom number or the charge value.
+    Returns:
+    str: The column name to use for ordering."""
+    order_by = input('Order the NPA data by atom number or charge value change? ((1)ATOM / (2)charge) ')
+    if order_by.lower() in ['atom', 'charge', '', '1', '2']:
+        if order_by.lower() in ['atom', '1', '']:
+            return 'atom'
+        else:
+            return 'charge'
+    else:
+        print('Invalid answer\n')
+        return order_by_npa()
 
 def graph_wiberg(df, fragment_division):
     """Creates a heatmap of the Wiberg bond index matrix.
     Parameters:
     df (np.ndarray): The Wiberg bond index matrix.
     fragment_division (list): A list of integers representing the division of the fragments.
+    returns:
+    None: The function saves the plot as a PNG file and the data as a CSV file.
     """
     matrixes = list()
     atom_list = list()
 
+    # Split the matrix into its fragments
     for i in range(1, len(fragment_division)-1):
         matrix = list()
         for j in range(fragment_division[1]):
@@ -364,7 +421,7 @@ def graph_wiberg(df, fragment_division):
         atoms_2 = list(range(fragment_division[i+1] + 1, fragment_division[i+2] + 1))
         matrixes[i], a1, a2 = edit_matrix(matrixes[i], atoms_1, atoms_2, tol)
         atom_list.append((a2, a1))
-    
+        
     for i, matrix in enumerate(matrixes):
         # Extract the labels for the current matrix
         x_labels = atom_list[i][0]  # Labels for the x-axis
@@ -391,8 +448,15 @@ def graph_wiberg(df, fragment_division):
         plt.xticks(rotation=45)
         plt.yticks(rotation=0)
 
-        # Show the plot
-        plt.savefig(f'./output/wiberg_fragment{i+2}xfragment1.png', dpi=300, bbox_inches='tight')
+        # Save the plot
+        plt.savefig(f'./output/wiberg/wiberg_fragment{i+2}xfragment1.png', dpi=300, bbox_inches='tight')
+        # Save the plot's data as CSV
+        np.savetxt(f'./output/wiberg/logs/wiberg_fragment{i+2}xfragment1.csv', matrix, delimiter=',', fmt='%.4f')
+        # Save the atom labels as CSV
+        pd.DataFrame({'Fragment 1': x_labels}).to_csv(
+            f'./output/wiberg/logs/wiberg_fragment{i+2}xfragment1_xlabels.csv', index=False)
+        pd.DataFrame({f'Fragment {i+2}': y_labels}).to_csv(
+            f'./output/wiberg/logs/wiberg_fragment{i+2}xfragment1_ylabels.csv', index=False)
 
 def input_filter_wiberg():
     """Ask the user if they want to filter the Wiberg bond index matrix based on the value.

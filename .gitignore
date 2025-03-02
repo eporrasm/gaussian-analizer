@@ -24,6 +24,8 @@ output/*.csv
 output/*.png
 input/*.log
 input/*.LOG
+output/npa
+output/wiberg
 
 # Keep the folders but ignore contents
 !input/.gitkeep
