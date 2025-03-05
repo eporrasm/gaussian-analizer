@@ -24,9 +24,16 @@ output/*.csv
 output/*.png
 input/*.log
 input/*.LOG
-output/npa
-output/wiberg
+output/npa/*.png
+output/npa/*.log
+output/npa/logs/*.csv
+output/wiberg/*.png
+output/wiberg/*.log
+output/wiberg/logs/*.csv
 
 # Keep the folders but ignore contents
 !input/.gitkeep
 !output/.gitkeep
+!output/npa/.gitkeep
+!output/wiberg/.gitkeep
+
